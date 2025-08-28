@@ -9,17 +9,17 @@
 </head>
 <body>
   <div class="container">
-    <!-- 🔍 صندوق البحث -->
-   <div class="search-container">
-  <input type="text" placeholder="Search..." class="search-input" id="searchInput">
-  <button id="searchBtn" class="search-btn">
-    <i class="fa-solid fa-magnifying-glass"></i>
-  </button>
-</div>
+    <!-- 🔍 Search box -->
+    <div class="search-container">
+      <input type="text" placeholder="Search..." class="search-input" id="searchInput">
+      <button id="searchBtn" class="search-btn">
+        <i class="fa-solid fa-magnifying-glass"></i>
+      </button>
+    </div>
 
     <h5 class="mt-4 items-title">ITEMS</h5>
 
-    <!-- 🟢 نموذج إضافة صنف -->
+    <!-- 🟢 Add Item Form -->
     <div id="receiveTable" class="receive-container">
       <form id="itemForm">
         <div class="input-row">
@@ -38,7 +38,7 @@
       </form>
     </div>
 
-    <!-- 📋 جدول عرض الأصناف -->
+    <!-- 📋 Items Table -->
     <div class="table-responsive mt-3">
       <table id="receiveTable" class="custom-table">
         <thead>
@@ -51,7 +51,7 @@
     </div>
   </div>
 
-  <!-- 🔹 نافذة النقل -->
+  <!-- 🔹 Transfer Modal -->
   <div id="transferModal" class="modal">
     <div class="modal-content">
       <h3>Transfer Item</h3>
@@ -65,14 +65,43 @@
     </div>
   </div>
 
+  <!-- 🔹 Logs Modal -->
+  <div id="logsModal" style="
+    display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%);
+    background:#fff; padding:20px; border-radius:10px; width:90%; max-width:800px;
+    box-shadow:0 5px 20px rgba(0,0,0,0.3); z-index:1000; overflow:auto; max-height:70%;
+  ">
+    <h3 style="margin-top:0;">Action Logs</h3>
+    <table id="logsTable" style="width:100%; border-collapse:collapse; font-family:Arial,sans-serif; font-size:14px;">
+      <thead>
+        <tr style="background:#0fd12f; color:#fff;">
+          <th style="border:1px solid #ddd; padding:8px;">#</th>
+          <th style="border:1px solid #ddd; padding:8px;">User</th>
+          <th style="border:1px solid #ddd; padding:8px;">Email</th>
+          <th style="border:1px solid #ddd; padding:8px;">Action</th>
+          <th style="border:1px solid #ddd; padding:8px;">Details</th>
+          <th style="border:1px solid #ddd; padding:8px;">Time</th>
+        </tr>
+      </thead>
+      <tbody id="logsContent"></tbody>
+    </table>
+    <button id="closeLogs" style="
+      margin-top:15px; padding:8px 15px; border:none; border-radius:5px;
+      background:#0fd12f; color:#fff; cursor:pointer;">Close</button>
+  </div>
+
+  <!-- 🔹 Logs Button -->
+  <button id="showLogsBtn" style="
+    display:none;
+    position:fixed; bottom:20px; right:20px; padding:10px 15px;
+    background:#48dbfb; border:none; border-radius:5px; cursor:pointer; z-index:100;">
+    Show Logs
+  </button>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-import { 
-  getDatabase, ref, push, set, update, remove, onValue 
-} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
-import { 
-  getAuth, onAuthStateChanged 
-} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+import { getDatabase, ref, push, set, update, remove, onValue } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCipCX2qabmYwOxUpJr07M0O1n4e6OTNrk",
@@ -89,18 +118,41 @@ const db = getDatabase(app);
 const auth = getAuth(app);
 
 let currentUser = { username: "", email: "" };
+const allowedUsers = [
+  "flashgroup17@gmail.com",
+  "mh8891287@gmail.com",
+  "hamdyfg@gmail.com",
+  "hamdyyousef75@gmail.com"
+];
 
-// ✅ تحديث currentUser تلقائيًا عند تسجيل الدخول
+const showLogsBtn = document.getElementById("showLogsBtn");
+const logsModal = document.getElementById("logsModal");
+const logsContent = document.getElementById("logsContent");
+const closeLogs = document.getElementById("closeLogs");
+
+// ✅ Always use Authentication for email
 onAuthStateChanged(auth, (user) => {
   if (user) {
-    onValue(ref(db, "users/" + user.uid), (snapshot) => {
-      const data = snapshot.val();
-      currentUser.username = data.username;
-      currentUser.email = data.email;
-      console.log("Logged in as:", currentUser.username, currentUser.email);
+    currentUser.email = user.email;
+    currentUser.username = user.displayName || "Unknown";
+
+    // Show button if email is allowed
+    if (allowedUsers.includes(user.email)) {
+      showLogsBtn.style.display = "block";
+    }
+
+    // Ensure DB has user entry
+    const userRef = ref(db, "users/" + user.uid);
+    onValue(userRef, (snapshot) => {
+      if (!snapshot.exists()) {
+        set(userRef, { username: currentUser.username, email: currentUser.email });
+      } else {
+        const data = snapshot.val();
+        currentUser.username = data.username || currentUser.username;
+      }
     }, { onlyOnce: true });
+
   } else {
-    // لو مفيش حد عامل login، اعادة التوجيه
     window.location.href = "index.html";
   }
 });
@@ -120,7 +172,7 @@ function logAction(actionType, details) {
 const itemForm = document.getElementById("itemForm");
 const itemsTable = document.getElementById("itemsTable");
 
-// إضافة عنصر جديد
+// Add new item
 itemForm.addEventListener("submit", (e) => {
   e.preventDefault();
   const productname = document.getElementById("productname").value;
@@ -133,7 +185,7 @@ itemForm.addEventListener("submit", (e) => {
   logAction("add", { productname, qty, unit, warehouse });
 });
 
-// عرض العناصر في الجدول
+// Display items table
 const itemsRef = ref(db, "items");
 onValue(itemsRef, (snapshot) => {
   itemsTable.innerHTML = "";
@@ -157,166 +209,56 @@ onValue(itemsRef, (snapshot) => {
   });
 });
 
-// باقي الكود للـ edit, delete, transfer بدون أي تغيير
-let transferData = {};
-const modal = document.getElementById("transferModal");
-const currentWarehouseText = document.getElementById("currentWarehouseText");
-const transferQtyInput = document.getElementById("transferQty");
-const targetWarehouseSelect = document.getElementById("targetWarehouse");
+// 🔹 Logs Modal functionality
+showLogsBtn.addEventListener("click", () => {
+  logsContent.innerHTML = "";
+  onValue(ref(db, "logs"), (snapshot) => {
+    let count = 1;
+    logsContent.innerHTML = "";
+    snapshot.forEach(child => {
+      const log = child.val();
 
-document.addEventListener("click", (e) => {
-
-  if (e.target.closest(".delete")) {
-    let row = e.target.closest("tr");
-    remove(ref(db, "items/" + row.dataset.id));
-    logAction("delete", {
-      productname: row.children[2].innerText,
-      qty: row.children[3].innerText,
-      unit: row.children[4].innerText,
-      warehouse: row.children[5].innerText
-    });
-  }
-
-  if (e.target.closest(".edit")) {
-    let row = e.target.closest("tr");
-    let id = row.dataset.id;
-    let tds = row.querySelectorAll("td");
-    const oldValues = {
-      productname: tds[2].innerText,
-      qty: tds[3].innerText,
-      unit: tds[4].innerText,
-      warehouse: tds[5].innerText,
-    };
-
-    tds[2].innerHTML = `<input type="text" class="rounded-input" value="${oldValues.productname}">`;
-    tds[3].innerHTML = `<input type="number" class="rounded-input" value="${oldValues.qty}">`;
-    tds[4].innerHTML = `
-      <select class="animated-select">
-        <option ${oldValues.unit==="Pcs"?"selected":""}>Pcs</option>
-        <option ${oldValues.unit==="kg"?"selected":""}>kg</option>
-        <option ${oldValues.unit==="ltr"?"selected":""}>ltr</option>
-        <option ${oldValues.unit==="m"?"selected":""}>m</option>
-      </select>`;
-    tds[5].innerHTML = `
-      <select class="animated-select">
-        <option ${oldValues.warehouse==="مخزن فيصل"?"selected":""}>مخزن فيصل</option>
-        <option ${oldValues.warehouse==="لبيني"?"selected":""}>لبيني</option>
-        <option ${oldValues.warehouse==="باب الوق"?"selected":""}>باب الوق</option>
-      </select>`;
-
-    tds[6].innerHTML = `
-      <button class="icon-btn save"><i class="fa-solid fa-check"></i></button>
-      <button class="icon-btn cancel"><i class="fa-solid fa-xmark"></i></button>`;
-
-    tds[6].querySelector(".save").addEventListener("click", () => {
-      const newData = {
-        productname: tds[2].querySelector("input").value,
-        qty: tds[3].querySelector("input").value,
-        unit: tds[4].querySelector("select").value,
-        warehouse: tds[5].querySelector("select").value,
-      };
-      update(ref(db, "items/" + id), newData);
-      logAction("edit", { before: oldValues, after: newData });
-    });
-
-    tds[6].querySelector(".cancel").addEventListener("click", () => {
-      tds[2].innerText = oldValues.productname;
-      tds[3].innerText = oldValues.qty;
-      tds[4].innerText = oldValues.unit;
-      tds[5].innerText = oldValues.warehouse;
-      tds[6].innerHTML = `
-        <button class="icon-btn delete"><i class="fa-solid fa-trash"></i></button>
-        <button class="icon-btn edit"><i class="fa-solid fa-pen-to-square"></i></button>
-        <button class="icon-btn warehouse"><i class="fa-solid fa-warehouse"></i></button>`;
-    });
-  }
-
-  if (e.target.closest(".warehouse")) {
-    let row = e.target.closest("tr");
-    let tds = row.querySelectorAll("td");
-    transferData = {
-      id: row.dataset.id,
-      productname: tds[2].innerText,
-      currentQty: parseInt(tds[3].innerText),
-      unit: tds[4].innerText,
-      currentWarehouse: tds[5].innerText,
-    };
-
-    currentWarehouseText.textContent = transferData.currentWarehouse;
-    transferQtyInput.value = 1;
-
-    targetWarehouseSelect.innerHTML = "";
-    ["مخزن فيصل","لبيني","باب الوق"].forEach(w => {
-      if (w !== transferData.currentWarehouse) {
-        let opt = document.createElement("option");
-        opt.value = w;
-        opt.textContent = w;
-        targetWarehouseSelect.appendChild(opt);
+      // 🔹 Format details
+      let detailsHtml = "";
+      if (log.details?.before || log.details?.after) {
+        if (log.details.before) {
+          detailsHtml += `<b>Before:</b><br>`;
+          Object.entries(log.details.before).forEach(([key, val]) => {
+            detailsHtml += `${key}: ${val}<br>`;
+          });
+        }
+        if (log.details.after) {
+          detailsHtml += `<b>After:</b><br>`;
+          Object.entries(log.details.after).forEach(([key, val]) => {
+            detailsHtml += `${key}: ${val}<br>`;
+          });
+        }
+      } else {
+        // fallback for simple actions (like add/delete without before/after)
+        Object.entries(log.details || {}).forEach(([key, val]) => {
+          detailsHtml += `${key}: ${val}<br>`;
+        });
       }
+
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td style="border:1px solid #ddd; padding:8px;">${count++}</td>
+        <td style="border:1px solid #ddd; padding:8px;">${log.user}</td>
+        <td style="border:1px solid #ddd; padding:8px;">${log.email}</td>
+        <td style="border:1px solid #ddd; padding:8px;">${log.action}</td>
+        <td style="border:1px solid #ddd; padding:8px; white-space:pre-line;">${detailsHtml}</td>
+        <td style="border:1px solid #ddd; padding:8px;">${new Date(log.timestamp).toLocaleString()}</td>
+      `;
+      logsContent.appendChild(row);
     });
-
-    modal.style.display = "flex";
-  }
-});
-
-document.getElementById("confirmTransfer").addEventListener("click", () => {
-  let transferQty = parseInt(transferQtyInput.value);
-  let newWarehouse = targetWarehouseSelect.value;
-  if (!transferQty || transferQty <= 0 || transferQty > transferData.currentQty) {
-    alert("❌ Invalid quantity!");
-    return;
-  }
-  onValue(itemsRef, (snapshot) => {
-    let found = null;
-    snapshot.forEach((child) => {
-      const item = child.val();
-      if (item.productname === transferData.productname && item.unit === transferData.unit && item.warehouse === newWarehouse) {
-        found = { id: child.key, qty: parseInt(item.qty) };
-      }
-    });
-    if (found) {
-      update(ref(db, "items/" + found.id), {
-        productname: transferData.productname,
-        qty: found.qty + transferQty,
-        unit: transferData.unit,
-        warehouse: newWarehouse,
-      });
-    } else {
-      const newItemRef = push(itemsRef);
-      set(newItemRef, {
-        productname: transferData.productname,
-        qty: transferQty,
-        unit: transferData.unit,
-        warehouse: newWarehouse,
-      });
-    }
-
-    logAction("transfer", {
-      productname: transferData.productname,
-      qty: transferQty,
-      from: transferData.currentWarehouse,
-      to: newWarehouse
-    });
-
-    const remainingQty = transferData.currentQty - transferQty;
-    if (remainingQty > 0) {
-      update(ref(db, "items/" + transferData.id), {
-        productname: transferData.productname,
-        qty: remainingQty,
-        unit: transferData.unit,
-        warehouse: transferData.currentWarehouse,
-      });
-    } else {
-      remove(ref(db, "items/" + transferData.id));
-    }
   }, { onlyOnce: true });
-  modal.style.display = "none";
+  logsModal.style.display = "block";
 });
 
-document.getElementById("cancelTransfer").addEventListener("click", () => {
-  modal.style.display = "none";
-});
 
+closeLogs.addEventListener("click", () => {
+  logsModal.style.display = "none";
+});
 </script>
 
 </body>
