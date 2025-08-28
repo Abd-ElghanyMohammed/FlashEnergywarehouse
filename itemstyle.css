@@ -1,0 +1,383 @@
+ body {
+  font-family: Arial, sans-serif;
+  background: linear-gradient(  #005ac2, #195701);
+  background-size: 400% 400%;
+  animation: gradientMove 15s ease infinite;
+  color: black;
+}
+
+@keyframes gradientMove {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.container {
+ background: linear-gradient(to bottom, #0f0c29, #302b63, #24243e);
+  padding: 50px;
+  margin: 20px auto;
+  border-radius: 20px;
+  box-shadow: 0px 4px 12px rgba(0,0,0,0.1);
+  max-width: 600px;
+  min-height: 100vh;
+}
+.mt-4.items-title {
+  text-align: left;
+  font-family: sans-serif;
+  font-size: 36px; /* حجم أكبر */
+  color: #fff;
+  text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5); /* ظل أسود شبه شفاف */
+}
+h3 {
+  color: #2d3436;
+  margin-bottom: 20px;
+}
+
+/* الأزرار */
+.icon-btn {
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  position: relative;
+  padding: 5px;
+  transition: color 0.3s;
+}
+.icon-btn::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -3px;
+  width: 0%;
+  height: 2px;
+  background: currentColor;
+  transition: width 0.3s ease;
+}
+.icon-btn:hover::after { width: 100%; }
+.icon-btn.add { color: green; }
+.icon-btn.edit { color: dodgerblue; }
+.icon-btn.delete { color: red; }
+.icon-btn.warehouse { color: rgb(14, 114, 153); }
+
+.rounded-input,
+.animated-select {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 6px 10px;
+  width: 100%;
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+}
+.rounded-input:focus,
+.animated-select:hover {
+  border-color: #007bff;
+  box-shadow: 0 0 5px rgba(0,123,255,0.5);
+}
+
+/* الحاويات */
+.receive-container { display: flex; flex-direction: column; gap: 10px; }
+.input-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 10px;
+  border: 2px solid #000;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+.actions { display: flex; gap: 5px; }
+
+/* الجدول */
+.custom-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #2f2f2f;
+  color: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.custom-table th, .custom-table td {
+  border: 1px solid #444;
+  padding: 8px;
+  text-align: center;
+}
+.custom-table th {
+  background-color: #3c3c3c;
+  color: white;
+}
+.custom-table tbody tr:nth-child(even) { background-color: #383838; }
+.custom-table tbody tr:nth-child(odd) { background-color: #2f2f2f; }
+.custom-table tbody tr:hover { background-color: #000; }
+.custom-table td:nth-child(2),
+.custom-table td:nth-child(3) { color: white; }
+
+/* scroll */
+.table-responsive {
+  max-height: 400px;
+  overflow-y: auto;
+  margin-top: 1rem;
+}
+
+/* Animation */
+@keyframes fadeSlideUp {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.custom-table tbody tr {
+  opacity: 0;
+  animation: fadeSlideUp 0.5s forwards;
+  animation-delay: calc(var(--i) * 0.1s);
+}
+
+/* البحث */
+.search-container {
+  position: relative;
+  width: 40px;
+  transition: width 0.4s ease;
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+}
+.search-container.active { width: 200px; }
+.search-input {
+  width: 100%;
+  padding: 8px 40px 8px 12px;
+  border-radius: 25px;
+  border: 2px solid #ccc;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  outline: none;
+  transition: all 0.4s ease;
+  opacity: 0;
+}
+.search-container.active .search-input { opacity: 1; }
+.search-btn {
+  position: absolute;
+  right: 5px;
+  background: #fff;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  color: #333;
+  outline: none;
+  z-index: 1;
+}
+
+/* العناوين */
+.items-title {
+  font-weight: bold;
+  text-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+}
+.item-row:hover { background-color: #f1f1f1; cursor: pointer; }
+.item-row.selected { background-color: #d1ffd1; }
+
+/* editable cells */
+.editable {
+  background-color: inherit;
+  border: none;
+  color: white;
+  outline: none;
+  width: 100%;
+  transition: background-color 0.3s ease;
+}
+.editable select, select.editable {
+  background-color: inherit;
+  border: none;
+  color: white;
+  appearance: none;
+  padding: 2px;
+}
+#tableBody tr:hover .editable,
+#tableBody tr:hover .editable select {
+  background-color: #000;
+}
+
+/* form group */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 20px 0;
+}
+.form-group label {
+  margin-bottom: 10px;
+  font-size: 18px;
+  font-weight: bold;
+}
+.form-group input {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  width: 200px;
+  text-align: center;
+}
+
+/* أزرار عامة */
+.btn {
+  background: transparent;
+  border: 2px solid transparent;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+  font-size: 16px;
+  color: #fffdfd;
+}
+.btn:hover {
+  border-color: #2196f3;
+  box-shadow: none;
+}
+
+/* warehouse input */
+#newWarehouse {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  box-shadow: 0px 4px 8px rgba(0,0,0,0.2);
+  background: #fff;
+  font-size: 16px;
+  outline: none;
+  transition: 0.3s ease;
+}
+#newWarehouse:focus {
+  border-color: #4CAF50;
+  box-shadow: 0px 6px 12px rgba(0,0,0,0.3);
+}
+
+/* المودال */
+#transferModal {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(45, 52, 54, 0.7);
+  color: white;
+  padding: 20px;
+  border-radius: 10px;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+#transferModal .form-group {
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+}
+#transferModal input[type="text"],
+#transferModal input[type="number"],
+#transferModal select {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: none;
+  outline: none;
+  font-size: 14px;
+}
+#transferModal .btn,
+#transferModal button {
+  margin-top: 10px;
+  padding: 8px 20px;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background: transparent;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+#transferModal button:hover {
+  border-color: #2196f3;
+  box-shadow: 0 0 8px rgba(33, 150, 243, 0.4);
+  transform: scale(1.05);
+}
+/* cancel and save edit-btn*/
+.icon-btn.save, 
+.icon-btn.cancel {
+  background: none;
+  border: none;
+  color: inherit; /* يخلي اللون ياخده من النص */
+  font-size: 16px;
+  cursor: pointer;
+  padding: 6px 10px;
+  transition: 0.2s;
+}
+
+.icon-btn.save:hover {
+  text-decoration: underline;
+  text-decoration-color: green; /* خط أخضر تحت النص */
+}
+
+.icon-btn.cancel:hover {
+  text-decoration: underline;
+  text-decoration-color: red; /* خط أحمر تحت النص */
+}
+
+   /* 🔹 تصميم النافذة المنبثقة */
+  .btn-confirm {
+  background: #28a745;   /* أخضر */
+  color: white;
+  font-weight: bold;
+  transition: 0.2s;
+}
+.btn-confirm:hover {
+  background: #218838;   /* أخضر غامق */
+}
+
+.btn-cancel {
+  background: #dc3545;   /* أحمر */
+  color: white;
+  font-weight: bold;
+  transition: 0.2s;
+}
+.btn-cancel:hover {
+  background: #c82333;   /* أحمر غامق */
+}
+
+.search-container {
+  position: relative;
+  display: flex;
+  justify-content: flex-end; /* يحافظ على الزر في اليمين */
+  align-items: center;
+}
+
+/* Input مخفي بالبداية */
+.search-input {
+  width: 0;
+  opacity: 0;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 20px;
+  outline: none;
+  transition: all 0.4s ease;
+  margin-right: 0;          
+  box-shadow: none;
+}
+
+.search-input.open {
+  width: 200px;               
+  opacity: 1;
+  margin-right: 10px;         
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.search-btn {
+  background: transparent; 
+  border: none;
+  color: #fff;             /* اللون الافتراضي أبيض */
+  padding: 10px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: color 0.3s;
+}
+
+.search-btn.active {
+  color: #000;             /* عند الفتح يصبح أسود */
+}

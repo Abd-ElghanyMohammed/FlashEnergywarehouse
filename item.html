@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Warehouse - Flash Energy</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css">
+  <link rel="stylesheet" href="itemstyle.css">
+</head>
+<body>
+  <div class="container">
+    <!-- 🔍 صندوق البحث -->
+   <div class="search-container">
+  <input type="text" placeholder="Search..." class="search-input" id="searchInput">
+  <button id="searchBtn" class="search-btn">
+    <i class="fa-solid fa-magnifying-glass"></i>
+  </button>
+</div>
+
+    <h5 class="mt-4 items-title">ITEMS</h5>
+
+    <!-- 🟢 نموذج إضافة صنف -->
+    <div id="receiveTable" class="receive-container">
+      <form id="itemForm">
+        <div class="input-row">
+          <input id="productname" name="productname" type="text" class="rounded-input animated-select" placeholder="Model" required>
+          <input id="qty" name="qty" type="number" class="rounded-input animated-select" min="1" value="1" placeholder="Qty" required>
+          <select id="unit" name="unit" class="rounded-input animated-select">
+            <option>Pcs</option><option>kg</option><option>ltr</option><option>m</option>
+          </select>
+          <select id="warehouse" name="warehouse" class="rounded-input animated-select">
+            <option>مخزن فيصل</option><option>لبيني</option><option>باب الوق</option>
+          </select>
+          <div class="actions">
+            <button type="submit" class="icon-btn add"><i class="fa-solid fa-plus"></i></button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- 📋 جدول عرض الأصناف -->
+    <div class="table-responsive mt-3">
+      <table id="receiveTable" class="custom-table">
+        <thead>
+          <tr>
+            <th>#</th><th>Barcode</th><th>Model</th><th>Qty</th><th>Unit</th><th>Warehouse</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="itemsTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 🔹 نافذة النقل -->
+  <div id="transferModal" class="modal">
+    <div class="modal-content">
+      <h3>Transfer Item</h3>
+      <p><b>Current Warehouse:</b> <span id="currentWarehouseText"></span></p>
+      <input type="number" id="transferQty" min="1" placeholder="Quantity">
+      <select id="targetWarehouse"></select>
+      <div class="modal-actions">
+        <button class="btn-confirm" id="confirmTransfer">Confirm</button>
+        <button class="btn-cancel" id="cancelTransfer">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+<script type="module">
+   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+import { getDatabase, ref, push, set, update, remove, onValue } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCipCX2qabmYwOxUpJr07M0O1n4e6OTNrk",
+  authDomain: "flashenergy-35783.firebaseapp.com",
+  databaseURL: "https://flashenergy-35783-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "flashenergy-35783",
+  storageBucket: "flashenergy-35783.appspot.com",
+  messagingSenderId: "661915550417",
+  appId: "1:661915550417:web:d461c040fc6acfec593bf0"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const itemForm = document.getElementById("itemForm");
+const itemsTable = document.getElementById("itemsTable");
+
+// إضافة عنصر جديد
+itemForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const productname = document.getElementById("productname").value;
+  const qty = document.getElementById("qty").value;
+  const unit = document.getElementById("unit").value;
+  const warehouse = document.getElementById("warehouse").value;
+  const itemsRef = ref(db, "items");
+  const newItemRef = push(itemsRef);
+  set(newItemRef, { productname, qty, unit, warehouse }).then(() => itemForm.reset());
+});
+
+// عرض العناصر في الجدول
+const itemsRef = ref(db, "items");
+onValue(itemsRef, (snapshot) => {
+  itemsTable.innerHTML = "";
+  let count = 1;
+  snapshot.forEach((child) => {
+    const item = child.val();
+    itemsTable.innerHTML += `
+      <tr data-id="${child.key}">
+        <td>${count++}</td>
+        <td>${child.key}</td>
+        <td>${item.productname}</td>
+        <td>${item.qty}</td>
+        <td>${item.unit}</td>
+        <td>${item.warehouse}</td>
+        <td>
+          <button class="icon-btn delete"><i class="fa-solid fa-trash"></i></button>
+          <button class="icon-btn edit"><i class="fa-solid fa-pen-to-square"></i></button>
+          <button class="icon-btn warehouse"><i class="fa-solid fa-warehouse"></i></button>
+        </td>
+      </tr>`;
+  });
+});
+
+let transferData = {};
+const modal = document.getElementById("transferModal");
+const currentWarehouseText = document.getElementById("currentWarehouseText");
+const transferQtyInput = document.getElementById("transferQty");
+const targetWarehouseSelect = document.getElementById("targetWarehouse");
+
+document.addEventListener("click", (e) => {
+
+  // Delete
+  if (e.target.closest(".delete")) {
+    let row = e.target.closest("tr");
+    remove(ref(db, "items/" + row.dataset.id));
+  }
+
+  // Edit
+  if (e.target.closest(".edit")) {
+    let row = e.target.closest("tr");
+    let id = row.dataset.id;
+    let tds = row.querySelectorAll("td");
+    const oldValues = {
+      productname: tds[2].innerText,
+      qty: tds[3].innerText,
+      unit: tds[4].innerText,
+      warehouse: tds[5].innerText,
+    };
+
+    // استبدال الخلايا بالـ inputs/selects
+    tds[2].innerHTML = `<input type="text" class="rounded-input" value="${oldValues.productname}">`;
+    tds[3].innerHTML = `<input type="number" class="rounded-input" value="${oldValues.qty}">`;
+    tds[4].innerHTML = `
+      <select class="animated-select">
+        <option ${oldValues.unit==="Pcs"?"selected":""}>Pcs</option>
+        <option ${oldValues.unit==="kg"?"selected":""}>kg</option>
+        <option ${oldValues.unit==="ltr"?"selected":""}>ltr</option>
+        <option ${oldValues.unit==="m"?"selected":""}>m</option>
+      </select>`;
+    tds[5].innerHTML = `
+      <select class="animated-select">
+        <option ${oldValues.warehouse==="مخزن فيصل"?"selected":""}>مخزن فيصل</option>
+        <option ${oldValues.warehouse==="لبيني"?"selected":""}>لبيني</option>
+        <option ${oldValues.warehouse==="باب الوق"?"selected":""}>باب الوق</option>
+      </select>`;
+
+    // استبدال الأزرار
+    tds[6].innerHTML = `
+      <button class="icon-btn save"><i class="fa-solid fa-check"></i></button>
+      <button class="icon-btn cancel"><i class="fa-solid fa-xmark"></i></button>`;
+
+    // Save
+    tds[6].querySelector(".save").addEventListener("click", () => {
+      const newData = {
+        productname: tds[2].querySelector("input").value,
+        qty: tds[3].querySelector("input").value,
+        unit: tds[4].querySelector("select").value,
+        warehouse: tds[5].querySelector("select").value,
+      };
+      update(ref(db, "items/" + id), newData);
+    });
+
+    // Cancel
+    tds[6].querySelector(".cancel").addEventListener("click", () => {
+      tds[2].innerText = oldValues.productname;
+      tds[3].innerText = oldValues.qty;
+      tds[4].innerText = oldValues.unit;
+      tds[5].innerText = oldValues.warehouse;
+      tds[6].innerHTML = `
+        <button class="icon-btn delete"><i class="fa-solid fa-trash"></i></button>
+        <button class="icon-btn edit"><i class="fa-solid fa-pen-to-square"></i></button>
+        <button class="icon-btn warehouse"><i class="fa-solid fa-warehouse"></i></button>`;
+    });
+  }
+
+  // Transfer
+  if (e.target.closest(".warehouse")) {
+    let row = e.target.closest("tr");
+    let tds = row.querySelectorAll("td");
+    transferData = {
+      id: row.dataset.id,
+      productname: tds[2].innerText,
+      currentQty: parseInt(tds[3].innerText),
+      unit: tds[4].innerText,
+      currentWarehouse: tds[5].innerText,
+    };
+
+    currentWarehouseText.textContent = transferData.currentWarehouse;
+    transferQtyInput.value = 1;
+
+    targetWarehouseSelect.innerHTML = "";
+    ["مخزن فيصل","لبيني","باب الوق"].forEach(w => {
+      if (w !== transferData.currentWarehouse) {
+        let opt = document.createElement("option");
+        opt.value = w;
+        opt.textContent = w;
+        targetWarehouseSelect.appendChild(opt);
+      }
+    });
+
+    modal.style.display = "flex";
+  }
+});
+
+// Confirm Transfer
+document.getElementById("confirmTransfer").addEventListener("click", () => {
+  let transferQty = parseInt(transferQtyInput.value);
+  let newWarehouse = targetWarehouseSelect.value;
+  if (!transferQty || transferQty <= 0 || transferQty > transferData.currentQty) {
+    alert("❌ Invalid quantity!");
+    return;
+  }
+  onValue(itemsRef, (snapshot) => {
+    let found = null;
+    snapshot.forEach((child) => {
+      const item = child.val();
+      if (item.productname === transferData.productname && item.unit === transferData.unit && item.warehouse === newWarehouse) {
+        found = { id: child.key, qty: parseInt(item.qty) };
+      }
+    });
+    if (found) {
+      update(ref(db, "items/" + found.id), {
+        productname: transferData.productname,
+        qty: found.qty + transferQty,
+        unit: transferData.unit,
+        warehouse: newWarehouse,
+      });
+    } else {
+      const newItemRef = push(itemsRef);
+      set(newItemRef, {
+        productname: transferData.productname,
+        qty: transferQty,
+        unit: transferData.unit,
+        warehouse: newWarehouse,
+      });
+    }
+
+    const remainingQty = transferData.currentQty - transferQty;
+    if (remainingQty > 0) {
+      update(ref(db, "items/" + transferData.id), {
+        productname: transferData.productname,
+        qty: remainingQty,
+        unit: transferData.unit,
+        warehouse: transferData.currentWarehouse,
+      });
+    } else {
+      remove(ref(db, "items/" + transferData.id));
+    }
+  }, { onlyOnce: true });
+  modal.style.display = "none";
+});
+
+// Cancel Transfer
+document.getElementById("cancelTransfer").addEventListener("click", () => {
+  modal.style.display = "none";
+});
+
+
+
+  
+</script>
+</body>
+<script src="compileitem.js"></script>
+</html>
