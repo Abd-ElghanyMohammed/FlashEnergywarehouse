@@ -34,34 +34,31 @@
   
   <!-- Firebase SDK -->
   <script type="module">
-    // Import Firebase modules
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-    import { 
-      getAuth, 
-      createUserWithEmailAndPassword, 
-      signInWithEmailAndPassword 
-    } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-    import { 
-      getDatabase, 
-      ref, 
-      set 
-    } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
 
-    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyCipCX2qabmYwOxUpJr07M0O1n4e6OTNrk",
       authDomain: "flashenergy-35783.firebaseapp.com",
-      databaseURL: "https://flashenergy-35783-default-rtdb.europe-west1.firebasedatabase.app", // ✅ added
+      databaseURL: "https://flashenergy-35783-default-rtdb.europe-west1.firebasedatabase.app",
       projectId: "flashenergy-35783",
-      storageBucket: "flashenergy-35783.appspot.com", // ✅ fixed
+      storageBucket: "flashenergy-35783.appspot.com",
       messagingSenderId: "661915550417",
       appId: "1:661915550417:web:d461c040fc6acfec593bf0"
     };
 
-    // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getDatabase(app);
+
+    // ✅ Allowed emails
+    const allowedEmails = [
+      "flashgroup17@gmail.com",
+      "mh8891287@gmail.com",
+      "hamdyfg@gmail.com",
+      "hamdyyousef75@gmail.com"
+    ];
 
     // Handle Sign Up
     const signupForm = document.getElementById("signupForm");
@@ -71,17 +68,20 @@
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
 
+      if (!allowedEmails.includes(email)) {
+        alert("❌ This email is not allowed to sign up.");
+        return;
+      }
+
       createUserWithEmailAndPassword(auth, email, password)
         .then((userCredential) => {
           const user = userCredential.user;
 
-          // Store user data in Realtime Database
           set(ref(db, "users/" + user.uid), {
             username: username,
             email: email
           });
 
-          // ✅ Redirect after signup
           window.location.href = "item.html";
         })
         .catch((error) => {
@@ -96,9 +96,13 @@
       const email = document.getElementById("loginEmail").value;
       const password = document.getElementById("loginPassword").value;
 
+      if (!allowedEmails.includes(email)) {
+        alert("❌ This email is not allowed to login.");
+        return;
+      }
+
       signInWithEmailAndPassword(auth, email, password)
         .then((userCredential) => {
-          // ✅ Redirect after login
           window.location.href = "item.html";
         })
         .catch((error) => {
