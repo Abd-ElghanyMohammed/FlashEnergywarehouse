@@ -223,38 +223,68 @@ onValue(itemsRef, (snapshot) => {
       const row = e.target.closest("tr");
       const id = row.getAttribute("data-id");
       const tds = row.querySelectorAll("td");
-      const productname = prompt("Enter new name:", tds[2].textContent);
-      const qty = prompt("Enter new qty:", tds[3].textContent);
-      const unit = prompt("Enter new unit:", tds[4].textContent);
-      const warehouse = prompt("Enter new warehouse:", tds[5].textContent);
 
-      if (productname && qty && unit && warehouse) {
-        update(ref(db, "items/" + id), { productname, qty, unit, warehouse });
-        logAction("edit", {
-          before: { productname: tds[2].textContent, qty: tds[3].textContent, unit: tds[4].textContent, warehouse: tds[5].textContent },
-          after: { productname, qty, unit, warehouse }
-        });
-      }
+      const oldData = {
+        productname: tds[2].textContent,
+        qty: tds[3].textContent,
+        unit: tds[4].textContent,
+        warehouse: tds[5].textContent
+      };
+
+      // Replace cells with inputs
+      tds[2].innerHTML = `<input type="text" value="${oldData.productname}" />`;
+      tds[3].innerHTML = `<input type="number" value="${oldData.qty}" />`;
+      tds[4].innerHTML = `
+        <select>
+          <option ${oldData.unit === "kg" ? "selected" : ""}>kg</option>
+          <option ${oldData.unit === "litre" ? "selected" : ""}>litre</option>
+          <option ${oldData.unit === "piece" ? "selected" : ""}>piece</option>
+        </select>
+      `;
+      tds[5].innerHTML = `
+        <select>
+          <option ${oldData.warehouse === "A" ? "selected" : ""}>A</option>
+          <option ${oldData.warehouse === "B" ? "selected" : ""}>B</option>
+          <option ${oldData.warehouse === "C" ? "selected" : ""}>C</option>
+        </select>
+      `;
+
+      // Change action buttons
+      tds[6].innerHTML = `
+        <button class="icon-btn save"><i class="fa-solid fa-check"></i></button>
+        <button class="icon-btn cancel"><i class="fa-solid fa-xmark"></i></button>
+      `;
+
+      // ✅ Save event
+      tds[6].querySelector(".save").addEventListener("click", () => {
+        const newData = {
+          productname: tds[2].querySelector("input").value,
+          qty: tds[3].querySelector("input").value,
+          unit: tds[4].querySelector("select").value,
+          warehouse: tds[5].querySelector("select").value
+        };
+
+        update(ref(db, "items/" + id), newData);
+
+        logAction("edit", { before: oldData, after: newData });
+      });
+
+      // ❌ Cancel event
+      tds[6].querySelector(".cancel").addEventListener("click", () => {
+        tds[2].textContent = oldData.productname;
+        tds[3].textContent = oldData.qty;
+        tds[4].textContent = oldData.unit;
+        tds[5].textContent = oldData.warehouse;
+
+        tds[6].innerHTML = `
+          <button class="icon-btn delete"><i class="fa-solid fa-trash"></i></button>
+          <button class="icon-btn edit"><i class="fa-solid fa-pen-to-square"></i></button>
+          <button class="icon-btn warehouse"><i class="fa-solid fa-warehouse"></i></button>
+        `;
+      });
     });
   });
 
-  document.querySelectorAll(".warehouse").forEach(btn => {
-    btn.addEventListener("click", (e) => {
-      const row = e.target.closest("tr");
-      const id = row.getAttribute("data-id");
-      const currentWarehouse = row.querySelectorAll("td")[5].textContent;
-      const newWarehouse = prompt("Enter new warehouse:", currentWarehouse);
-
-      if (newWarehouse && newWarehouse !== currentWarehouse) {
-        update(ref(db, "items/" + id), { warehouse: newWarehouse });
-        logAction("transfer", {
-          before: { warehouse: currentWarehouse },
-          after: { warehouse: newWarehouse }
-        });
-      }
-    });
-  });
-});
 
 // 🔹 Logs Modal functionality
 showLogsBtn.addEventListener("click", () => {
