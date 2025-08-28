@@ -218,72 +218,114 @@ onValue(itemsRef, (snapshot) => {
     });
   });
 
-  document.querySelectorAll(".edit").forEach(btn => {
-    btn.addEventListener("click", (e) => {
-      const row = e.target.closest("tr");
-      const id = row.getAttribute("data-id");
-      const tds = row.querySelectorAll("td");
+ let transferData = {};
+const modal = document.getElementById("transferModal");
+const currentWarehouseText = document.getElementById("currentWarehouseText");
+const transferQtyInput = document.getElementById("transferQty");
+const targetWarehouseSelect = document.getElementById("targetWarehouse");
 
-      const oldData = {
-        productname: tds[2].textContent,
-        qty: tds[3].textContent,
-        unit: tds[4].textContent,
-        warehouse: tds[5].textContent
-      };
+document.addEventListener("click", (e) => {
 
-      // Replace cells with inputs
-      tds[2].innerHTML = `<input type="text" value="${oldData.productname}" />`;
-      tds[3].innerHTML = `<input type="number" value="${oldData.qty}" />`;
-      tds[4].innerHTML = `
-        <select>
-          <option ${oldData.unit === "kg" ? "selected" : ""}>kg</option>
-          <option ${oldData.unit === "litre" ? "selected" : ""}>litre</option>
-          <option ${oldData.unit === "piece" ? "selected" : ""}>piece</option>
-        </select>
-      `;
-      tds[5].innerHTML = `
-        <select>
-          <option ${oldData.warehouse === "A" ? "selected" : ""}>A</option>
-          <option ${oldData.warehouse === "B" ? "selected" : ""}>B</option>
-          <option ${oldData.warehouse === "C" ? "selected" : ""}>C</option>
-        </select>
-      `;
-
-      // Change action buttons
-      tds[6].innerHTML = `
-        <button class="icon-btn save"><i class="fa-solid fa-check"></i></button>
-        <button class="icon-btn cancel"><i class="fa-solid fa-xmark"></i></button>
-      `;
-
-      // ✅ Save event
-      tds[6].querySelector(".save").addEventListener("click", () => {
-        const newData = {
-          productname: tds[2].querySelector("input").value,
-          qty: tds[3].querySelector("input").value,
-          unit: tds[4].querySelector("select").value,
-          warehouse: tds[5].querySelector("select").value
-        };
-
-        update(ref(db, "items/" + id), newData);
-
-        logAction("edit", { before: oldData, after: newData });
-      });
-
-      // ❌ Cancel event
-      tds[6].querySelector(".cancel").addEventListener("click", () => {
-        tds[2].textContent = oldData.productname;
-        tds[3].textContent = oldData.qty;
-        tds[4].textContent = oldData.unit;
-        tds[5].textContent = oldData.warehouse;
-
-        tds[6].innerHTML = `
-          <button class="icon-btn delete"><i class="fa-solid fa-trash"></i></button>
-          <button class="icon-btn edit"><i class="fa-solid fa-pen-to-square"></i></button>
-          <button class="icon-btn warehouse"><i class="fa-solid fa-warehouse"></i></button>
-        `;
-      });
+  if (e.target.closest(".delete")) {
+    let row = e.target.closest("tr");
+    remove(ref(db, "items/" + row.dataset.id));
+    logAction("delete", {
+      productname: row.children[2].innerText,
+      qty: row.children[3].innerText,
+      unit: row.children[4].innerText,
+      warehouse: row.children[5].innerText
     });
-  });
+  }
+
+  if (e.target.closest(".edit")) {
+    let row = e.target.closest("tr");
+    let id = row.dataset.id;
+    let tds = row.querySelectorAll("td");
+    const oldValues = {
+      productname: tds[2].innerText,
+      qty: tds[3].innerText,
+      unit: tds[4].innerText,
+      warehouse: tds[5].innerText,
+    };
+
+    tds[2].innerHTML = `<input type="text" class="rounded-input" value="${oldValues.productname}">`;
+    tds[3].innerHTML = `<input type="number" class="rounded-input" value="${oldValues.qty}">`;
+    tds[4].innerHTML = `
+      <select class="animated-select">
+        <option ${oldValues.unit==="Pcs"?"selected":""}>Pcs</option>
+        <option ${oldValues.unit==="kg"?"selected":""}>kg</option>
+        <option ${oldValues.unit==="ltr"?"selected":""}>ltr</option>
+        <option ${oldValues.unit==="m"?"selected":""}>m</option>
+      </select>`;
+    tds[5].innerHTML = `
+      <select class="animated-select">
+        <option ${oldValues.warehouse==="مخزن فيصل"?"selected":""}>مخزن فيصل</option>
+        <option ${oldValues.warehouse==="لبيني"?"selected":""}>لبيني</option>
+        <option ${oldValues.warehouse==="باب الوق"?"selected":""}>باب الوق</option>
+      </select>`;
+
+    tds[6].innerHTML = `
+      <button class="icon-btn save"><i class="fa-solid fa-check"></i></button>
+      <button class="icon-btn cancel"><i class="fa-solid fa-xmark"></i></button>`;
+
+    tds[6].querySelector(".save").addEventListener("click", () => {
+      const newData = {
+        productname: tds[2].querySelector("input").value,
+        qty: tds[3].querySelector("input").value,
+        unit: tds[4].querySelector("select").value,
+        warehouse: tds[5].querySelector("select").value,
+      };
+      update(ref(db, "items/" + id), newData);
+      logAction("edit", { before: oldValues, after: newData });
+    });
+
+    tds[6].querySelector(".cancel").addEventListener("click", () => {
+      tds[2].innerText = oldValues.productname;
+      tds[3].innerText = oldValues.qty;
+      tds[4].innerText = oldValues.unit;
+      tds[5].innerText = oldValues.warehouse;
+      tds[6].innerHTML = `
+        <button class="icon-btn delete"><i class="fa-solid fa-trash"></i></button>
+        <button class="icon-btn edit"><i class="fa-solid fa-pen-to-square"></i></button>
+        <button class="icon-btn warehouse"><i class="fa-solid fa-warehouse"></i></button>`;
+    });
+  }
+
+  if (e.target.closest(".warehouse")) {
+    let row = e.target.closest("tr");
+    let tds = row.querySelectorAll("td");
+    transferData = {
+      id: row.dataset.id,
+      productname: tds[2].innerText,
+      currentQty: parseInt(tds[3].innerText),
+      unit: tds[4].innerText,
+      currentWarehouse: tds[5].innerText,
+    };
+
+    currentWarehouseText.textContent = transferData.currentWarehouse;
+    transferQtyInput.value = 1;
+
+    targetWarehouseSelect.innerHTML = "";
+    ["مخزن فيصل","لبيني","باب الوق"].forEach(w => {
+      if (w !== transferData.currentWarehouse) {
+        let opt = document.createElement("option");
+        opt.value = w;
+        opt.textContent = w;
+        targetWarehouseSelect.appendChild(opt);
+      }
+    });
+
+    modal.style.display = "flex";
+  }
+});
+
+document.getElementById("confirmTransfer").addEventListener("click", () => {
+  let transferQty = parseInt(transferQtyInput.value);
+  let newWarehouse = targetWarehouseSelect.value;
+  if (!transferQty || transferQty <= 0 || transferQty > transferData.currentQty) {
+    alert("❌ Invalid quantity!");
+    return;
+  }
 
 
 // 🔹 Logs Modal functionality
