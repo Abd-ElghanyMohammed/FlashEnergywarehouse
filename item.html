@@ -207,6 +207,53 @@ onValue(itemsRef, (snapshot) => {
         </td>
       </tr>`;
   });
+
+  // ✅ لازم نضيف الlisteners بعد ما نرندر الصفوف
+  document.querySelectorAll(".delete").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      const row = e.target.closest("tr");
+      const id = row.getAttribute("data-id");
+      remove(ref(db, "items/" + id));
+      logAction("delete", { id });
+    });
+  });
+
+  document.querySelectorAll(".edit").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      const row = e.target.closest("tr");
+      const id = row.getAttribute("data-id");
+      const tds = row.querySelectorAll("td");
+      const productname = prompt("Enter new name:", tds[2].textContent);
+      const qty = prompt("Enter new qty:", tds[3].textContent);
+      const unit = prompt("Enter new unit:", tds[4].textContent);
+      const warehouse = prompt("Enter new warehouse:", tds[5].textContent);
+
+      if (productname && qty && unit && warehouse) {
+        update(ref(db, "items/" + id), { productname, qty, unit, warehouse });
+        logAction("edit", {
+          before: { productname: tds[2].textContent, qty: tds[3].textContent, unit: tds[4].textContent, warehouse: tds[5].textContent },
+          after: { productname, qty, unit, warehouse }
+        });
+      }
+    });
+  });
+
+  document.querySelectorAll(".warehouse").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      const row = e.target.closest("tr");
+      const id = row.getAttribute("data-id");
+      const currentWarehouse = row.querySelectorAll("td")[5].textContent;
+      const newWarehouse = prompt("Enter new warehouse:", currentWarehouse);
+
+      if (newWarehouse && newWarehouse !== currentWarehouse) {
+        update(ref(db, "items/" + id), { warehouse: newWarehouse });
+        logAction("transfer", {
+          before: { warehouse: currentWarehouse },
+          after: { warehouse: newWarehouse }
+        });
+      }
+    });
+  });
 });
 
 // 🔹 Logs Modal functionality
@@ -255,10 +302,10 @@ showLogsBtn.addEventListener("click", () => {
   logsModal.style.display = "block";
 });
 
-
 closeLogs.addEventListener("click", () => {
   logsModal.style.display = "none";
 });
+
 </script>
 
 </body>
